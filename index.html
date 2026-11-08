@@ -3,117 +3,141 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anu AI - Clear 3D Viewer V5</title>
-
+<title>Anu AI Clear 3D</title>
 <style>
-* { box-sizing: border-box; }
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #100d18;
-  color: white;
-  font-family: Arial, sans-serif;
+*{box-sizing:border-box}
+body{
+ margin:0;background:#100d14;color:white;
+ font-family:Arial,sans-serif;text-align:center
 }
-#viewer {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+header{padding:12px}
+h2{margin:5px}
+#stage{
+ width:100%;height:75vh;min-height:420px;
+ position:relative;overflow:hidden;
+ background:radial-gradient(ellipse,#51445c,#17121e);
 }
-#viewer canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
+#viewer{position:absolute;inset:0}
+.controls{padding:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+button,select{
+ padding:11px;border-radius:9px;border:1px solid #a48ab8;
+ background:#392a45;color:white;font-size:14px
 }
-#status {
-  position: fixed;
-  z-index: 10;
-  left: 0;
-  right: 0;
-  bottom: 12px;
-  padding: 12px;
-  text-align: center;
-  color: white;
-  font-size: 14px;
-  background: rgba(0,0,0,.55);
-  pointer-events: none;
-}
+select{min-width:200px}
+#status{padding:10px;font-size:13px}
 </style>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-    "@mkkellogg/gaussian-splats-3d": "https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js"
-  }
-}
-</script>
 </head>
-
 <body>
+<header>
+<h2>💜 Anu AI – Clear 3D</h2>
+<div>Original Colour · Face Clarity Adjustment</div>
+</header>
+
+<div id="stage">
 <div id="viewer"></div>
-<div id="status">அனு 3D மாடல் ஏற்றப்படுகிறது...</div>
+</div>
+
+<div class="controls">
+<select id="model">
+<option value="ok 3d col anu.ply">Primary – Anu</option>
+<option value="3D col 1.ply">Colour 1</option>
+<option value="3d col 2.ply">Colour 2</option>
+</select>
+<button id="reset">Reset View</button>
+<button id="fullscreen">Full Screen</button>
+</div>
+
+<div id="status">Loading 3D model...</div>
 
 <script type="module">
 import * as GaussianSplats3D from
-  '@mkkellogg/gaussian-splats-3d';
+'https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js';
 
-const status = document.getElementById('status');
-const host = document.getElementById('viewer');
+const host=document.getElementById('viewer');
+const status=document.getElementById('status');
+const select=document.getElementById('model');
 
-async function startAnu() {
-  try {
-    status.textContent = '3D நூலகம் ஏற்றப்படுகிறது...';
+let viewer=null;
+let loading=false;
 
-    const viewer = new GaussianSplats3D.Viewer({
-      cameraUp: [0, 1, 0],
-      initialCameraPosition: [0, 0, 3],
-      initialCameraLookAt: [0, 0, 0],
-      useBuiltInControls: true,
-      selfDrivenMode: true,
-      sphericalHarmonicsDegree: 0,
-      sharedMemoryForWorkers: false,
-      gpuAcceleratedSort: false,
-      ignoreDevicePixelRatio: false,
-      halfPrecisionCovariancesOnGPU: false,
-      antialiased: true,
-      focalAdjustment: 1.0,
-      logLevel: GaussianSplats3D.LogLevel.Error
-    });
+async function loadModel(filename){
+ if(loading)return;
+ loading=true;
+ status.textContent='Loading '+filename+'...';
 
-    status.textContent = 'அனு 3D மாடல் பதிவிறக்கம் செய்யப்படுகிறது...';
-
-    const modelPath = new URL(
-      './ok%203d%20col%20anu.ply',
-      document.baseURI
-    ).href;
-
-    await viewer.addSplatScene(modelPath, {
-      format: GaussianSplats3D.SceneFormat.Ply,
-      showLoadingUI: true,
-      progressiveLoad: true,
-      splatAlphaRemovalThreshold: 1,
-      scale: [1, 1, 1],
-      rotation: [0, 0, 1, 0]
-    });
-
-    viewer.start();
-
-    status.textContent =
-      'அனு 3D மாடல் ஏற்றப்பட்டது! விரலால் இழுத்து சுழற்றலாம்.';
-
-  } catch (error) {
-    console.error('Anu Viewer Error:', error);
-    status.textContent =
-      'பிழை: ' + (error.message || String(error));
+ try{
+  if(viewer){
+   viewer.dispose();
+   viewer=null;
   }
+
+  host.replaceChildren();
+
+  viewer=new GaussianSplats3D.Viewer({
+   rootElement:host,
+   selfDrivenMode:true,
+   useBuiltInControls:true,
+   cameraUp:[0,1,0],
+   initialCameraPosition:[0,0,1.55],
+   initialCameraLookAt:[0,0,0],
+   sharedMemoryForWorkers:false,
+   gpuAcceleratedSort:false,
+   ignoreDevicePixelRatio:false,
+   halfPrecisionCovariancesOnGPU:false,
+   sphericalHarmonicsDegree:0,
+
+   // Clarity adjustment
+   focalAdjustment:1.30,
+   kernel2DSize:0.12,
+   maxScreenSpaceSplatSize:1024,
+
+   sceneRevealMode:GaussianSplats3D.SceneRevealMode.Instant,
+   logLevel:GaussianSplats3D.LogLevel.Error
+  });
+
+  await viewer.addSplatScene(
+   './'+encodeURIComponent(filename),
+   {
+    format:GaussianSplats3D.SceneFormat.Ply,
+    showLoadingUI:true,
+    splatAlphaRemovalThreshold:1,
+    progressiveLoad:false,
+    scale:[1,1,1],
+
+    // Preserve upright orientation
+    rotation:[0,0,1,0]
+   }
+  );
+
+  viewer.start();
+  status.textContent='3D Model Loaded Successfully';
+
+ }catch(error){
+  console.error(error);
+  status.textContent='Error: '+error.message;
+ }finally{
+  loading=false;
+ }
 }
 
-startAnu();
+select.addEventListener('change',()=>{
+ loadModel(select.value);
+});
+
+document.getElementById('reset').addEventListener('click',()=>{
+ loadModel(select.value);
+});
+
+document.getElementById('fullscreen').addEventListener('click',()=>{
+ const stage=document.getElementById('stage');
+ if(!document.fullscreenElement){
+  stage.requestFullscreen?.();
+ }else{
+  document.exitFullscreen?.();
+ }
+});
+
+loadModel(select.value);
 </script>
 </body>
 </html>
